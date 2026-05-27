@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IFPI – Registro de Certificados Blockchain</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 text-slate-800">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header class="bg-blue-900 text-white shadow-lg">
+    <div class="max-w-5xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-white rounded-full p-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-900" fill="none"
+               viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m0-6l-3.5 2m7 0L12 20"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold leading-tight">IFPI – Registro de Certificados</h1>
+          <p class="text-blue-300 text-xs">Instituto Federal do Piauí · Blockchain Ethereum (Sepolia)</p>
+        </div>
+      </div>
+      <span class="sm:ml-auto text-xs bg-blue-700 rounded-full px-3 py-1">Testnet Sepolia</span>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+    <!-- ── Área da Instituição (Admin) ──────────────────────────────────── -->
+    <section class="bg-white rounded-2xl shadow-md p-8 flex flex-col gap-6">
+      <div>
+        <h2 class="text-lg font-bold text-blue-900 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd"
+                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                  clip-rule="evenodd"/>
+          </svg>
+          Área da Instituição
+        </h2>
+        <p class="text-slate-500 text-sm mt-1">
+          Acesso restrito ao administrador do contrato (endereço que realizou o deploy).
+        </p>
+      </div>
+
+      <!-- Botão MetaMask -->
+      <button id="btnConectar"
+              class="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all
+                     text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M21.94 3.06a1 1 0 00-1.41 0L12 11.59 3.47 3.06A1 1 0 002.06 4.47L10.59 13
+                   2.06 21.53a1 1 0 001.41 1.41L12 14.41l8.53 8.53a1 1 0 001.41-1.41
+                   L13.41 13l8.53-8.53a1 1 0 000-1.41z"/>
+        </svg>
+        Conectar MetaMask
+      </button>
+
+      <div id="statusConexao" class="hidden text-sm"></div>
+
+      <!-- Formulário de Emissão -->
+      <div id="formEmissao" class="hidden">
+        <form id="formEmissaoEl" class="flex flex-col gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="nomeAluno">
+              Nome do Aluno
+            </label>
+            <input id="nomeAluno" type="text" placeholder="Ex.: Maria da Silva"
+                   class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                          placeholder-slate-400" required />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="curso">
+              Curso
+            </label>
+            <input id="curso" type="text" placeholder="Ex.: Tecnologia em Análise e Desenvolvimento de Sistemas"
+                   class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                          placeholder-slate-400" required />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="hashDocumento">
+              Hash do Documento
+            </label>
+            <input id="hashDocumento" type="text" placeholder="Ex.: abc123def456..."
+                   class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm font-mono
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                          placeholder-slate-400" required />
+            <p class="text-xs text-slate-400 mt-1">
+              Identificador único do arquivo do certificado (SHA-256 ou outro hash).
+            </p>
+          </div>
+
+          <button id="btnEmitir" type="submit"
+                  class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all
+                         text-white font-semibold py-3 px-4 rounded-xl">
+            Emitir Certificado na Blockchain
+          </button>
+        </form>
+
+        <div id="statusEmissao" class="hidden mt-4 text-sm"></div>
+      </div>
+    </section>
+
+    <!-- ── Área de Consulta Pública ─────────────────────────────────────── -->
+    <section class="bg-white rounded-2xl shadow-md p-8 flex flex-col gap-6">
+      <div>
+        <h2 class="text-lg font-bold text-blue-900 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd"
+                  d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817
+                     a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                  clip-rule="evenodd"/>
+          </svg>
+          Verificação Pública
+        </h2>
+        <p class="text-slate-500 text-sm mt-1">
+          Qualquer pessoa pode verificar a autenticidade de um certificado sem custo de gás.
+        </p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1" for="hashVerificacao">
+          Hash do Documento
+        </label>
+        <input id="hashVerificacao" type="text" placeholder="Cole o hash do documento aqui..."
+               class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm font-mono
+                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                      placeholder-slate-400" />
+      </div>
+
+      <button id="btnVerificar"
+              class="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all
+                     text-white font-semibold py-3 px-4 rounded-xl">
+        Verificar Autenticidade
+      </button>
+
+      <div id="statusVerificacao" class="hidden text-sm"></div>
+
+      <!-- Resultado -->
+      <div id="resultadoVerificacao"
+           class="hidden border border-green-200 bg-green-50 rounded-xl p-5 flex flex-col gap-3">
+        <div class="flex items-center gap-2 mb-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" viewBox="0 0 20 20"
+               fill="currentColor">
+            <path fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414
+                     L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clip-rule="evenodd"/>
+          </svg>
+          <span class="font-semibold text-green-800">Certificado Autêntico</span>
+        </div>
+
+        <div class="grid grid-cols-1 gap-2 text-sm">
+          <div class="flex flex-col">
+            <span class="text-slate-500 text-xs uppercase tracking-wide">Nome do Aluno</span>
+            <span id="res-nome" class="font-medium text-slate-800"></span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-slate-500 text-xs uppercase tracking-wide">Curso</span>
+            <span id="res-curso" class="font-medium text-slate-800"></span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-slate-500 text-xs uppercase tracking-wide">Data de Emissão</span>
+            <span id="res-data" class="font-medium text-slate-800"></span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-slate-500 text-xs uppercase tracking-wide">Status</span>
+            <span id="res-status" class="font-semibold text-green-600"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Footer ──────────────────────────────────────────────────────────── -->
+  <footer class="text-center text-slate-400 text-xs pb-8">
+    Instituto Federal do Piauí &mdash; Sistema de Certificados na Blockchain &mdash; Rede Sepolia
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
