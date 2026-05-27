@@ -1,5 +1,5 @@
-// Preencha com o endereço do contrato após o deploy na Sepolia
-const CONTRACT_ADDRESS = "";
+// Endereço do contrato após o deploy na Sepolia
+const CONTRACT_ADDRESS = "0x5a862deb8cf42bE01D23253CCAE6d2741b4FE2Bc";
 
 const ABI = [
   {
@@ -10,9 +10,9 @@ const ABI = [
   {
     "anonymous": false,
     "inputs": [
-      { "indexed": true,  "internalType": "bytes32", "name": "idDocumento", "type": "bytes32" },
-      { "indexed": false, "internalType": "string",  "name": "nomeAluno",   "type": "string"  },
-      { "indexed": false, "internalType": "string",  "name": "curso",       "type": "string"  },
+      { "indexed": true, "internalType": "bytes32", "name": "idDocumento", "type": "bytes32" },
+      { "indexed": false, "internalType": "string", "name": "nomeAluno", "type": "string" },
+      { "indexed": false, "internalType": "string", "name": "curso", "type": "string" },
       { "indexed": false, "internalType": "uint256", "name": "dataEmissao", "type": "uint256" }
     ],
     "name": "CertificadoEmitido",
@@ -28,8 +28,8 @@ const ABI = [
   {
     "inputs": [
       { "internalType": "bytes32", "name": "_idDocumento", "type": "bytes32" },
-      { "internalType": "string",  "name": "_nomeAluno",   "type": "string"  },
-      { "internalType": "string",  "name": "_curso",       "type": "string"  }
+      { "internalType": "string", "name": "_nomeAluno", "type": "string" },
+      { "internalType": "string", "name": "_curso", "type": "string" }
     ],
     "name": "emitirCertificado",
     "outputs": [],
@@ -40,10 +40,10 @@ const ABI = [
     "inputs": [{ "internalType": "bytes32", "name": "_idDocumento", "type": "bytes32" }],
     "name": "verificarCertificado",
     "outputs": [
-      { "internalType": "string",  "name": "nomeAluno",   "type": "string"  },
-      { "internalType": "string",  "name": "curso",       "type": "string"  },
+      { "internalType": "string", "name": "nomeAluno", "type": "string" },
+      { "internalType": "string", "name": "curso", "type": "string" },
       { "internalType": "uint256", "name": "dataEmissao", "type": "uint256" },
-      { "internalType": "bool",    "name": "isValido",    "type": "bool"    }
+      { "internalType": "bool", "name": "isValido", "type": "bool" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -52,7 +52,7 @@ const ABI = [
 
 // ─── Estado global ───────────────────────────────────────────────────────────
 let provider = null;
-let signer   = null;
+let signer = null;
 let contract = null;
 
 // ─── Utilitários ─────────────────────────────────────────────────────────────
@@ -60,9 +60,9 @@ function showStatus(elementId, message, type = "info") {
   const el = document.getElementById(elementId);
   if (!el) return;
   const colors = {
-    info:    "bg-blue-50 border-blue-400 text-blue-800",
+    info: "bg-blue-50 border-blue-400 text-blue-800",
     success: "bg-green-50 border-green-400 text-green-800",
-    error:   "bg-red-50 border-red-400 text-red-800",
+    error: "bg-red-50 border-red-400 text-red-800",
     loading: "bg-yellow-50 border-yellow-400 text-yellow-800",
   };
   el.className = `border-l-4 p-4 rounded-lg text-sm ${colors[type] || colors.info}`;
@@ -80,7 +80,7 @@ function formatTimestamp(ts) {
 
 // ─── Conexão MetaMask ─────────────────────────────────────────────────────────
 async function conectarMetaMask() {
-  const btn    = document.getElementById("btnConectar");
+  const btn = document.getElementById("btnConectar");
   const status = document.getElementById("statusConexao");
 
   if (!window.ethereum) {
@@ -94,25 +94,25 @@ async function conectarMetaMask() {
   }
 
   try {
-    btn.disabled    = true;
+    btn.disabled = true;
     btn.textContent = "Conectando...";
 
     await window.ethereum.request({ method: "eth_requestAccounts" });
 
     provider = new ethers.BrowserProvider(window.ethereum);
-    signer   = await provider.getSigner();
+    signer = await provider.getSigner();
     contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
     const network = await provider.getNetwork();
     if (network.chainId !== 11155111n) {
       showStatus("statusConexao", "Rede incorreta. Conecte a carteira à Testnet Sepolia.", "error");
-      btn.disabled    = false;
+      btn.disabled = false;
       btn.textContent = "Conectar MetaMask";
       return;
     }
 
     const address = await signer.getAddress();
-    const short   = `${address.slice(0, 6)}...${address.slice(-4)}`;
+    const short = `${address.slice(0, 6)}...${address.slice(-4)}`;
 
     btn.textContent = `Conectado: ${short}`;
     btn.classList.replace("bg-blue-600", "bg-green-600");
@@ -122,7 +122,7 @@ async function conectarMetaMask() {
     showStatus("statusConexao", `Carteira conectada com sucesso na Sepolia.`, "success");
   } catch (err) {
     showStatus("statusConexao", `Erro ao conectar: ${err.message}`, "error");
-    btn.disabled    = false;
+    btn.disabled = false;
     btn.textContent = "Conectar MetaMask";
   }
 }
@@ -131,10 +131,10 @@ async function conectarMetaMask() {
 async function emitirCertificado(event) {
   event.preventDefault();
 
-  const nomeAluno   = document.getElementById("nomeAluno").value.trim();
-  const curso       = document.getElementById("curso").value.trim();
-  const hashDocRaw  = document.getElementById("hashDocumento").value.trim();
-  const statusEl    = "statusEmissao";
+  const nomeAluno = document.getElementById("nomeAluno").value.trim();
+  const curso = document.getElementById("curso").value.trim();
+  const hashDocRaw = document.getElementById("hashDocumento").value.trim();
+  const statusEl = "statusEmissao";
 
   if (!nomeAluno || !curso || !hashDocRaw) {
     showStatus(statusEl, "Preencha todos os campos antes de emitir.", "error");
@@ -152,7 +152,7 @@ async function emitirCertificado(event) {
   const btnEmitir = document.getElementById("btnEmitir");
 
   try {
-    btnEmitir.disabled    = true;
+    btnEmitir.disabled = true;
     btnEmitir.textContent = "Aguardando confirmação...";
     showStatus(statusEl, "Transação enviada. Aguardando mineração...", "loading");
 
@@ -169,7 +169,7 @@ async function emitirCertificado(event) {
     const msg = err?.reason ?? err?.message ?? "Erro desconhecido.";
     showStatus(statusEl, `Erro ao emitir certificado: ${msg}`, "error");
   } finally {
-    btnEmitir.disabled    = false;
+    btnEmitir.disabled = false;
     btnEmitir.textContent = "Emitir Certificado na Blockchain";
   }
 }
@@ -177,7 +177,7 @@ async function emitirCertificado(event) {
 // ─── Verificação Pública ──────────────────────────────────────────────────────
 async function verificarCertificado() {
   const hashDocRaw = document.getElementById("hashVerificacao").value.trim();
-  const resultEl   = document.getElementById("resultadoVerificacao");
+  const resultEl = document.getElementById("resultadoVerificacao");
 
   resultEl.classList.add("hidden");
 
@@ -194,7 +194,7 @@ async function verificarCertificado() {
   const btnVerificar = document.getElementById("btnVerificar");
 
   try {
-    btnVerificar.disabled    = true;
+    btnVerificar.disabled = true;
     btnVerificar.textContent = "Consultando...";
 
     if (!provider) {
@@ -211,11 +211,11 @@ async function verificarCertificado() {
       return;
     }
 
-    document.getElementById("res-nome").textContent    = nomeAluno;
-    document.getElementById("res-curso").textContent   = curso;
-    document.getElementById("res-data").textContent    = formatTimestamp(dataEmissao);
-    document.getElementById("res-status").textContent  = "Válido";
-    document.getElementById("res-status").className    = "font-semibold text-green-600";
+    document.getElementById("res-nome").textContent = nomeAluno;
+    document.getElementById("res-curso").textContent = curso;
+    document.getElementById("res-data").textContent = formatTimestamp(dataEmissao);
+    document.getElementById("res-status").textContent = "Válido";
+    document.getElementById("res-status").className = "font-semibold text-green-600";
 
     resultEl.classList.remove("hidden");
     document.getElementById("statusVerificacao").classList.add("hidden");
@@ -223,7 +223,7 @@ async function verificarCertificado() {
     const msg = err?.reason ?? err?.message ?? "Erro desconhecido.";
     showStatus("statusVerificacao", `Erro na consulta: ${msg}`, "error");
   } finally {
-    btnVerificar.disabled    = false;
+    btnVerificar.disabled = false;
     btnVerificar.textContent = "Verificar Autenticidade";
   }
 }
@@ -236,6 +236,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (window.ethereum) {
     window.ethereum.on("accountsChanged", () => location.reload());
-    window.ethereum.on("chainChanged",    () => location.reload());
+    window.ethereum.on("chainChanged", () => location.reload());
   }
 });
