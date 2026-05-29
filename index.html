@@ -4,8 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>IFPI – Registro de Certificados Blockchain</title>
+
+  <!-- Estilos e Fontes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400;1,700&display=swap"
+        rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Bibliotecas JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    /* Garante que o QR code gerado fique alinhado à direita */
+    #qrcodeEl img, #qrcodeEl canvas { display: block; margin-left: auto; }
+  </style>
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 text-slate-800">
@@ -33,74 +47,137 @@
   <main class="max-w-5xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
 
     <!-- ── Área da Instituição (Admin) ──────────────────────────────────── -->
-    <section class="bg-white rounded-2xl shadow-md p-8 flex flex-col gap-6">
+    <section class="bg-white rounded-2xl shadow-md p-8 flex flex-col gap-5">
       <div>
         <h2 class="text-lg font-bold text-blue-900 flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd"
-                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                  clip-rule="evenodd"/>
+                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
           </svg>
           Área da Instituição
         </h2>
-        <p class="text-slate-500 text-sm mt-1">
-          Acesso restrito ao administrador do contrato (endereço que realizou o deploy).
-        </p>
+        <p class="text-slate-500 text-sm mt-1">Acesso restrito ao administrador do contrato.</p>
       </div>
 
       <!-- Botão MetaMask -->
       <button id="btnConectar"
               class="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all
                      text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M21.94 3.06a1 1 0 00-1.41 0L12 11.59 3.47 3.06A1 1 0 002.06 4.47L10.59 13
-                   2.06 21.53a1 1 0 001.41 1.41L12 14.41l8.53 8.53a1 1 0 001.41-1.41
-                   L13.41 13l8.53-8.53a1 1 0 000-1.41z"/>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 50 50" fill="currentColor">
+          <path d="M43.6 5L27.3 17.1l3-7.1z"/>
+          <path fill="#E17726" d="M6.4 5l16.2 12.2-2.9-7.2z"/>
+          <path fill="#E27625" d="M37.5 34.4l-4.4 6.7 9.4 2.6 2.7-9.2z"/>
+          <path fill="#E27625" d="M4.8 34.5l2.7 9.2 9.4-2.6-4.4-6.7z"/>
         </svg>
         Conectar MetaMask
       </button>
 
       <div id="statusConexao" class="hidden text-sm"></div>
 
-      <!-- Formulário de Emissão -->
+      <!-- Formulário de Emissão (oculto até conexão) -->
       <div id="formEmissao" class="hidden">
         <form id="formEmissaoEl" class="flex flex-col gap-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1" for="nomeAluno">
-              Nome do Aluno
-            </label>
-            <input id="nomeAluno" type="text" placeholder="Ex.: Maria da Silva"
-                   class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                          placeholder-slate-400" required />
-          </div>
 
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1" for="curso">
-              Curso
-            </label>
-            <input id="curso" type="text" placeholder="Ex.: Tecnologia em Análise e Desenvolvimento de Sistemas"
-                   class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
-                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                          placeholder-slate-400" required />
-          </div>
-
+          <!-- Hash do Documento -->
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1" for="hashDocumento">
-              Hash do Documento
+              Hash do Documento <span class="text-red-400">*</span>
             </label>
-            <input id="hashDocumento" type="text" placeholder="Ex.: abc123def456..."
+            <input id="hashDocumento" type="text" placeholder="Ex.: sha256-abc123..."
                    class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm font-mono
                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                           placeholder-slate-400" required />
-            <p class="text-xs text-slate-400 mt-1">
-              Identificador único do arquivo do certificado (SHA-256 ou outro hash).
-            </p>
+            <p class="text-xs text-slate-400 mt-1">Identificador único do arquivo do certificado.</p>
+          </div>
+
+          <!-- Nome e Matrícula (grid) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="nomeAluno">
+                Nome do Aluno <span class="text-red-400">*</span>
+              </label>
+              <input id="nomeAluno" type="text" placeholder="Ex.: Maria da Silva"
+                     class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                            placeholder-slate-400" required />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="matricula">
+                Matrícula <span class="text-red-400">*</span>
+              </label>
+              <input id="matricula" type="text" placeholder="Ex.: 2021123456"
+                     class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                            placeholder-slate-400" required />
+            </div>
+          </div>
+
+          <!-- Tipo de Certificado -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="tipoCertificado">
+              Tipo de Certificado <span class="text-red-400">*</span>
+            </label>
+            <select id="tipoCertificado"
+                    class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                           bg-white" required>
+              <option value="" disabled selected>Selecione o tipo...</option>
+              <option value="Tecnólogo">Tecnólogo</option>
+              <option value="Bacharelado">Bacharelado</option>
+              <option value="Licenciatura">Licenciatura</option>
+              <option value="Especialização">Especialização</option>
+              <option value="Extensão">Extensão</option>
+              <option value="Participação em Evento">Participação em Evento</option>
+            </select>
+          </div>
+
+          <!-- Curso -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="curso">
+              Nome do Curso <span class="text-red-400">*</span>
+            </label>
+            <input id="curso" type="text"
+                   placeholder="Ex.: Tecnologia em Análise e Desenvolvimento de Sistemas"
+                   class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                          placeholder-slate-400" required />
+          </div>
+
+          <!-- Campus -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1" for="campus">
+              Campus <span class="text-red-400">*</span>
+            </label>
+            <input id="campus" type="text"
+                   class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                          placeholder-slate-400" required />
+          </div>
+
+          <!-- Carga Horária e Data de Conclusão (grid) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="cargaHoraria">
+                Carga Horária <span class="text-red-400">*</span>
+              </label>
+              <input id="cargaHoraria" type="text" placeholder="Ex.: 2.400 horas"
+                     class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                            placeholder-slate-400" required />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1" for="dataConclusao">
+                Data de Conclusão <span class="text-red-400">*</span>
+              </label>
+              <input id="dataConclusao" type="date"
+                     class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required />
+            </div>
           </div>
 
           <button id="btnEmitir" type="submit"
                   class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all
-                         text-white font-semibold py-3 px-4 rounded-xl">
+                         text-white font-semibold py-3 px-4 rounded-xl mt-1">
             Emitir Certificado na Blockchain
           </button>
         </form>
@@ -109,20 +186,20 @@
       </div>
     </section>
 
-    <!-- ── Área de Consulta Pública ─────────────────────────────────────── -->
-    <section class="bg-white rounded-2xl shadow-md p-8 flex flex-col gap-6">
+    <!-- ── Área de Verificação Pública ──────────────────────────────────── -->
+    <section class="bg-white rounded-2xl shadow-md p-8 flex flex-col gap-5">
       <div>
         <h2 class="text-lg font-bold text-blue-900 flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd"
-                  d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817
-                     a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                  d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89
+                     3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
                   clip-rule="evenodd"/>
           </svg>
           Verificação Pública
         </h2>
         <p class="text-slate-500 text-sm mt-1">
-          Qualquer pessoa pode verificar a autenticidade de um certificado sem custo de gás.
+          Qualquer pessoa pode verificar um certificado sem custo de gás.
         </p>
       </div>
 
@@ -143,43 +220,14 @@
       </button>
 
       <div id="statusVerificacao" class="hidden text-sm"></div>
-
-      <!-- Resultado -->
-      <div id="resultadoVerificacao"
-           class="hidden border border-green-200 bg-green-50 rounded-xl p-5 flex flex-col gap-3">
-        <div class="flex items-center gap-2 mb-1">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" viewBox="0 0 20 20"
-               fill="currentColor">
-            <path fill-rule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414
-                     L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clip-rule="evenodd"/>
-          </svg>
-          <span class="font-semibold text-green-800">Certificado Autêntico</span>
-        </div>
-
-        <div class="grid grid-cols-1 gap-2 text-sm">
-          <div class="flex flex-col">
-            <span class="text-slate-500 text-xs uppercase tracking-wide">Nome do Aluno</span>
-            <span id="res-nome" class="font-medium text-slate-800"></span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-slate-500 text-xs uppercase tracking-wide">Curso</span>
-            <span id="res-curso" class="font-medium text-slate-800"></span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-slate-500 text-xs uppercase tracking-wide">Data de Emissão</span>
-            <span id="res-data" class="font-medium text-slate-800"></span>
-          </div>
-          <div class="flex flex-col">
-            <span class="text-slate-500 text-xs uppercase tracking-wide">Status</span>
-            <span id="res-status" class="font-semibold text-green-600"></span>
-          </div>
-        </div>
-      </div>
     </section>
 
   </main>
+
+  <!-- ── Diploma Digital (fora do grid, largura total) ────────────────── -->
+  <div class="max-w-5xl mx-auto px-4 pb-16">
+    <div id="diplomaContainer" class="hidden"></div>
+  </div>
 
   <!-- ── Footer ──────────────────────────────────────────────────────────── -->
   <footer class="text-center text-slate-400 text-xs pb-8">
