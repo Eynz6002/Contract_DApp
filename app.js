@@ -1,5 +1,5 @@
 // Atualize com o endereço do contrato após reimplantar RegistroCertificados.sol
-const CONTRACT_ADDRESS = "0x2F9253b18F89016A048237f124fB564d2309150e";
+const CONTRACT_ADDRESS = "0x16454530b14FBA44047fC9D0496bab408742dDf3";
 
 // Componentes da struct DadosAluno — reutilizados em input e output da ABI
 const _DADOS_COMPONENTS = [
@@ -46,6 +46,13 @@ const ABI = [
     "name": "emitirCertificado",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "obterTodosOsHashes",
+    "outputs": [{ "internalType": "bytes32[]", "name": "", "type": "bytes32[]" }],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -248,7 +255,11 @@ async function verificarCertificado() {
       : ethers.getDefaultProvider("sepolia");
     const readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, readProvider);
 
-    const idDocumento = ethers.id(hashDocRaw);
+    // Aceita hash original (string) ou bytes32 hex (0x...) vindo do Livro de Registro
+    const idDocumento = /^0x[0-9a-fA-F]{64}$/.test(hashDocRaw)
+      ? hashDocRaw
+      : ethers.id(hashDocRaw);
+
     const [dados, dataEmissao, isValido] =
       await readContract.verificarCertificado(idDocumento);
 
@@ -373,6 +384,80 @@ function renderDiploma(data, hashDocRaw) {
   container.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+// ─── Livro de Registro Público ────────────────────────────────────────────────
+async function carregarLivroRegistro() {
+  const tbody = document.getElementById("corpoTabela");
+  const loadingEl = document.getElementById("livroLoading");
+  const vazioEl = document.getElementById("livroVazio");
+
+  if (!CONTRACT_ADDRESS) {
+    if (loadingEl) loadingEl.classList.add("hidden");
+    return;
+  }
+
+  try {
+    const readProvider = window.ethereum
+      ? new ethers.BrowserProvider(window.ethereum)
+      : ethers.getDefaultProvider("sepolia");
+    const readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, readProvider);
+
+    const hashes = await readContract.obterTodosOsHashes();
+
+    if (loadingEl) loadingEl.classList.add("hidden");
+
+    if (hashes.length === 0) {
+      if (vazioEl) vazioEl.classList.remove("hidden");
+      return;
+    }
+
+    for (const hashBytes32 of hashes) {
+      try {
+        const [dados, dataEmissao, isValido] =
+          await readContract.verificarCertificado(hashBytes32);
+        if (!isValido) continue;
+
+        const tr = document.createElement("tr");
+        tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
+        tr.innerHTML = `
+                    <td class="py-3 px-4 text-xs font-semibold text-blue-700 whitespace-nowrap">
+                        ${dados.tipoCertificado}
+                    </td>
+                    <td class="py-3 px-4">
+                        <p class="font-medium text-slate-800 text-sm">${dados.nomeAluno}</p>
+                        <p class="text-xs text-slate-400">Mat. ${dados.matricula}</p>
+                    </td>
+                    <td class="py-3 px-4 text-sm text-slate-600">${dados.curso}</td>
+                    <td class="py-3 px-4 text-xs text-slate-500 whitespace-nowrap">
+                        ${formatarTimestamp(dataEmissao)}
+                    </td>
+                    <td class="py-3 px-4">
+                        <button onclick="visualizarDoRegistro('${hashBytes32}')"
+                                class="bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all
+                                       text-white text-xs font-medium px-3 py-1.5 rounded-lg">
+                            Visualizar
+                        </button>
+                    </td>`;
+        tbody.appendChild(tr);
+      } catch {
+        // Certificado pode ter sido invalidado — ignora silenciosamente
+      }
+    }
+  } catch (err) {
+    if (loadingEl) {
+      loadingEl.textContent = "Não foi possível carregar o livro de registro.";
+      loadingEl.className = "text-sm text-red-500 py-4 text-center";
+      loadingEl.classList.remove("hidden");
+    }
+  }
+}
+
+function visualizarDoRegistro(hashBytes32) {
+  const input = document.getElementById("hashVerificacao");
+  input.value = hashBytes32;
+  input.scrollIntoView({ behavior: "smooth", block: "center" });
+  verificarCertificado();
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnConectar").addEventListener("click", conectarMetaMask);
@@ -380,6 +465,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnVerificar").addEventListener("click", verificarCertificado);
 
   document.getElementById("campus").value = "IFPI - Campus Parnaíba";
+
+  carregarLivroRegistro();
 
   if (window.ethereum) {
     window.ethereum.on("accountsChanged", () => location.reload());
