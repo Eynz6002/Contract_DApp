@@ -23,6 +23,7 @@ contract RegistroCertificados {
     }
 
     mapping(bytes32 => Certificado) private certificados;
+    bytes32[] private listaDocumentos;
 
     event CertificadoEmitido(
         bytes32 indexed idDocumento,
@@ -57,6 +58,7 @@ contract RegistroCertificados {
             dataEmissao: block.timestamp,
             isValido:    true
         });
+        listaDocumentos.push(_idDocumento);
 
         emit CertificadoEmitido(
             _idDocumento,
@@ -65,6 +67,10 @@ contract RegistroCertificados {
             _dados.tipoCertificado,
             block.timestamp
         );
+    }
+
+    function obterTodosOsHashes() external view returns (bytes32[] memory) {
+        return listaDocumentos;
     }
 
     function verificarCertificado(bytes32 _idDocumento)
