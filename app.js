@@ -1,5 +1,5 @@
 // Atualize com o endereço do contrato após reimplantar RegistroCertificados.sol
-const CONTRACT_ADDRESS = "0x16454530b14FBA44047fC9D0496bab408742dDf3";
+const CONTRACT_ADDRESS = "0x695A23a48f4D64B6f1f35FC3a18B935C9B0A5564";
 
 // Componentes da struct DadosAluno — reutilizados em input e output da ABI
 const _DADOS_COMPONENTS = [
